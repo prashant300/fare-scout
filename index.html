@@ -105,6 +105,14 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
 .x{background:none;border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer}
 .fl{border-top:1px solid var(--line);padding:9px 0;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
 .fl .p{font-weight:700;text-align:right}
+button.fl{width:100%;background:none;border:0;border-top:1px solid var(--line);color:inherit;font:inherit;text-align:left;cursor:pointer}
+button.fl:hover,button.fl.sel{background:var(--soft)}
+.bd{background:var(--soft);border-radius:10px;padding:12px 14px;margin-bottom:6px}
+.bd-h{margin-bottom:6px}
+.bd-r{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-variant-numeric:tabular-nums}
+.bd-r.unk span:last-child{color:var(--muted);font-style:italic}
+.bd-r.sum{border-top:1px solid var(--line);margin-top:4px;padding-top:6px;font-weight:600}
+.bd-r.total{border-top:1px solid var(--line);margin-top:4px;padding-top:6px;font-weight:700;color:var(--best)}
 .tag{display:inline-block;font-size:.74rem;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--amber-bg);margin:2px 4px 2px 0}
 .tag.yes{background:var(--best-bg);color:var(--best)}
 .open{display:inline-block;margin-top:12px;font-weight:600}
@@ -165,7 +173,7 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
       <h2>Card rewards</h2>
       <div class="rates">
         <label for="rSb">SmartBuy, HDFC Infinia (%)</label><input id="rSb" type="number" step="0.1" min="0">
-        <label for="rAx">Travel EDGE, Axis Atlas (%)</label><input id="rAx" type="number" step="0.1" min="0">
+        <label for="rAx">Travel EDGE, Axis (% off)</label><input id="rAx" type="number" step="0.1" min="0">
         <label for="rOt">Other sites, card you pay with (%)</label><input id="rOt" type="number" step="0.1" min="0">
       </div>
       <h2 style="margin-top:18px">Saved scans</h2>
@@ -197,7 +205,7 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
     { id: "flipkart", name: "Flipkart", sub: "", rate: "ot" },
     { id: "amazon", name: "Amazon", sub: "", rate: "ot" }
   ];
-  const DEFAULTS = { sb: 16.5, ax: 5, ot: 3.3, nonstop: false, from: "PAT", to: "BLR", days: "7", adults: "1" };
+  const DEFAULTS = { v: 2, sb: 16.5, ax: 10, ot: 3.3, nonstop: false, from: "PAT", to: "BLR", days: "7", adults: "1" };
   const $ = id => document.getElementById(id);
   const inr = n => n == null || !isFinite(n) ? "—" : "₹" + Math.round(n).toLocaleString("en-IN");
   const fmtD = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
@@ -219,12 +227,14 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
     clearTimeout(saveT);
     saveT = setTimeout(() => { if (G.ready) gistWrite({ "settings.json": { content: JSON.stringify(S.settings) } }).catch(() => {}); }, 1500);
   }
+  // Settings saved before v2 used 5% for Axis; move them to 10%.
+  function mergeSettings(src) { if (!src) return; Object.assign(S.settings, src); if (!src.v || src.v < 2) { S.settings.ax = 10; S.settings.v = 2; } }
   function applySettingsToForm() {
     const s = S.settings;
     $("rSb").value = s.sb; $("rAx").value = s.ax; $("rOt").value = s.ot; $("nonstop").checked = !!s.nonstop;
     $("from").value = s.from; $("to").value = s.to; $("days").value = String(s.days); $("adults").value = String(s.adults);
   }
-  const local = readLocal(); if (local) Object.assign(S.settings, local);
+  const local = readLocal(); mergeSettings(local);
   applySettingsToForm();
   $("start").value = isoPlus(today(), 1);
   $("start").min = today();
@@ -342,7 +352,7 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
     const hist = [];
     for (const f of files) {
       try {
-        if (f.filename === "settings.json") { const d = JSON.parse(await fileText(f)); Object.assign(S.settings, d); writeLocal(S.settings); applySettingsToForm(); }
+        if (f.filename === "settings.json") { const d = JSON.parse(await fileText(f)); mergeSettings(d); writeLocal(S.settings); applySettingsToForm(); }
         else if (/^scan-\d+\.json$/.test(f.filename)) { const d = JSON.parse(await fileText(f)); if (d && d.params) hist.push(Object.assign({ id: f.filename }, d)); }
       } catch (e) {}
     }
@@ -453,7 +463,7 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
 
     let h = `<thead><tr><th>Site</th>${S.dates.map(d => { const [w, ...r] = fmtD(d).split(" "); return `<th><span class="d">${esc(r.join(" "))}</span>${esc(w.replace(",", ""))}</th>`; }).join("")}</tr></thead><tbody>`;
     for (const s of SOURCES) {
-      h += `<tr><th class="${s.cls || ""}">${esc(s.name)}<span class="s">${s.id === "smartbuy" || s.id === "axis" ? esc(s.sub) + ", " : ""}${(S.settings[s.rate] || 0)}% back</span></th>`;
+      h += `<tr><th class="${s.cls || ""}">${esc(s.name)}<span class="s">${s.id === "smartbuy" || s.id === "axis" ? esc(s.sub) + ", " : ""}${(S.settings[s.rate] || 0)}% ${s.id === "axis" ? "off" : "back"}</span></th>`;
       for (const d of S.dates) {
         const c = S.cells[key(s.id, d)] || { status: "queued" };
         const f = chosen(c), pr = price(s.id, f);
@@ -497,14 +507,40 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
     return "";
   }
 
-  function openCell(k) {
+  function breakdownHtml(srcId, f) {
+    const pr = price(srcId, f), fe = f.fees || {}, rows = [];
+    const has = v => v != null && isFinite(v);
+    if (has(fe.base) && fe.base > 0) rows.push(["Base fare", inr(fe.base)]);
+    if (has(fe.taxes) && fe.taxes > 0) rows.push(["Taxes and airline fees", inr(fe.taxes)]);
+    if (has(fe.convFee)) rows.push(["Convenience / platform fee", fe.convFee ? inr(fe.convFee) : "₹0"]);
+    else rows.push(["Convenience / platform fee", "Not shown before checkout", "unk"]);
+    if (has(fe.discount) && fe.discount > 0) rows.push(["Portal discount", "−" + inr(fe.discount)]);
+    rows.push(["Listed price", inr(pr.listed), "sum"]);
+    if (pr.saving) rows.push([`Site offer${pr.code ? " (" + esc(pr.code) + ")" : ""}`, "−" + inr(pr.saving)]);
+    const rate = Math.round(rateFor(srcId) * 1000) / 10;
+    if (pr.back) rows.push([`${srcId === "axis" ? "Axis discount" : "Card rewards"} (${rate}%)`, "−" + inr(pr.back)]);
+    rows.push(["Effective price", inr(pr.eff), "total"]);
+    let note = has(fe.convFee) ? (fe.source ? `Fees as shown by ${esc(fe.source)}.` : "") :
+      "This site doesn't show convenience or platform fees on its results page. Any that apply are added at checkout, so the amount you pay can be higher than the listed price.";
+    if (srcId !== "smartbuy" && srcId !== "axis" && pr.back) note += ` Card rewards assume you pay with a card earning ${rate}%.`;
+    return `<div class="bd"><div class="bd-h"><strong>Price breakdown</strong> <span class="muted small">per adult, ${esc(f.flight || f.airline || "")}${f.dep ? " " + esc(f.dep) : ""}</span></div>` +
+      rows.map(r => `<div class="bd-r ${r[2] || ""}"><span>${r[0]}</span><span>${r[1]}</span></div>`).join("") +
+      (note ? `<p class="muted small" style="margin:8px 0 0">${note}</p>` : "") + `</div>`;
+  }
+
+  function openCell(k, pick) {
     const c = S.cells[k]; if (!c) return;
     const [srcId, d] = k.split("|"); const s = SOURCES.find(x => x.id === srcId);
     let h = `<header><div><h2>${esc(s.name)}, ${esc(fmtD(d))}</h2><div class="muted small">${c.scannedAt ? "Checked " + fmtTs(c.scannedAt) : ""}${c.count ? ` · ${c.count} flights found` : ""}</div></div><button class="x" type="button" id="dlgX">Close</button></header>`;
+    let rows = [];
     if (c.status !== "ok") h += `<p>${esc(c.status === "login" ? "Sign in to this site in Chrome, then rescan." : c.error || "No flights found.")}</p>`;
     else {
-      const rows = (S.settings.nonstop ? (c.top || []).filter(f => f.stops === 0).concat(c.nonstop && !(c.top || []).some(f => f.stops === 0) ? [c.nonstop] : []) : (c.top || []));
-      h += rows.map(f => { const pr = price(srcId, f); return `<div class="fl"><div><strong>${esc(f.flight || f.airline)}</strong>${f.flight && f.airline ? ` <span class="muted">${esc(f.airline)}</span>` : ""}<span class="sub">${f.dep ? esc(f.dep) + " → " + esc(f.arr) + (f.nextDay ? " (+1)" : "") + ", " : ""}${f.stops === 0 ? "non-stop" : f.stops != null ? f.stops + " stop" + (f.via ? " via " + esc(f.via) : "") : ""}${f.durMin ? ", " + hm(f.durMin) : ""}${f.note ? ". " + esc(f.note) : ""}</span></div><div class="p">${inr(pr.eff)}<span class="sub">${inr(pr.listed)}${pr.saving ? " − " + inr(pr.saving) : ""}</span></div></div>`; }).join("") || `<p class="muted">No matching flights.</p>`;
+      rows = (S.settings.nonstop ? (c.top || []).filter(f => f.stops === 0).concat(c.nonstop && !(c.top || []).some(f => f.stops === 0) ? [c.nonstop] : []) : (c.top || []));
+      if (!rows.length && chosen(c)) rows = [chosen(c)];
+      const sel = rows[pick || 0] || chosen(c);
+      if (sel) h += breakdownHtml(srcId, sel);
+      if (rows.length > 1) h += `<h2 style="margin-top:14px">Flights on this date</h2><p class="muted small" style="margin:0 0 4px">Tap one to see its breakdown.</p>`;
+      if (rows.length > 1) h += rows.map((f, i) => { const pr = price(srcId, f); return `<button type="button" class="fl${i === (pick || 0) ? " sel" : ""}" data-i="${i}"><div><strong>${esc(f.flight || f.airline)}</strong>${f.flight && f.airline ? ` <span class="muted">${esc(f.airline)}</span>` : ""}<span class="sub">${f.dep ? esc(f.dep) + " → " + esc(f.arr) + (f.nextDay ? " (+1)" : "") + ", " : ""}${f.stops === 0 ? "non-stop" : f.stops != null ? f.stops + " stop" + (f.via ? " via " + esc(f.via) : "") : ""}${f.durMin ? ", " + hm(f.durMin) : ""}${f.note ? ". " + esc(f.note) : ""}</span></div><div class="p">${inr(pr.eff)}<span class="sub">${inr(pr.listed)}${pr.saving ? " − " + inr(pr.saving) : ""}</span></div></button>`; }).join("");
       const offers = c.offers || [];
       if (offers.length) {
         h += `<h2 style="margin-top:14px">Other offers the site showed</h2><p class="muted small" style="margin:0 0 6px">Not counted above. Their value depends on the card and fare, and shows at checkout.</p>`;
@@ -513,8 +549,9 @@ dialog::backdrop{background:rgba(10,15,30,.45)}
     }
     if (c.url) h += `<a class="open" href="${esc(c.url)}" target="_blank" rel="noopener">Open this search on ${esc(s.name)}</a>`;
     $("dlgBody").innerHTML = h;
-    $("dlg").showModal();
+    if (!$("dlg").open) $("dlg").showModal();
     $("dlgX").addEventListener("click", () => $("dlg").close());
+    $("dlgBody").querySelectorAll("button.fl").forEach(b => b.addEventListener("click", () => openCell(k, +b.dataset.i)));
   }
   $("dlg").addEventListener("click", e => { if (e.target === $("dlg")) $("dlg").close(); });
 
