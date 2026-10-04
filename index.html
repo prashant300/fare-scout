@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="fare-scout-app" content="1">
+<title>Fare Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8EDF3; --paper:#FFFFFF; --ink:#13203B; --muted:#5A6878; --line:#CDD6E1; --soft:#F3F6FA;
+  --best:#1E7A6D; --best-bg:#D9F0EA; --amber:#E2952A; --amber-bg:#FCEFD9; --bad:#B3261E;
+  --hdfc:#1B3F8F; --axis:#8B1E3F;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1422; --paper:#16203A; --ink:#E5EBF3; --muted:#97A5B7; --line:#2B3853; --soft:#1B2643;
+    --best:#4CC2B0; --best-bg:#123A35; --amber:#F2B04F; --amber-bg:#3A2D17; --bad:#F2B8B5;
+    --hdfc:#8AAAF2; --axis:#E58AA6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1422; --paper:#16203A; --ink:#E5EBF3; --muted:#97A5B7; --line:#2B3853; --soft:#1B2643;
+  --best:#4CC2B0; --best-bg:#123A35; --amber:#F2B04F; --amber-bg:#3A2D17; --bad:#F2B8B5;
+  --hdfc:#8AAAF2; --axis:#E58AA6;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+.cond{font-family:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:24px 18px 56px}
+h1{font:700 2rem/1.1 "IBM Plex Sans Condensed","Arial Narrow",sans-serif;margin:0}
+h2{font:600 1.15rem/1.3 "IBM Plex Sans Condensed","Arial Narrow",sans-serif;margin:0 0 8px}
+.muted{color:var(--muted)} .small{font-size:.84rem}
+button,input,select{font:inherit;color:inherit}
+input,select{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,td:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+a{color:inherit}
+
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.ext{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.ext.on .dot{background:var(--best)} .ext.off .dot{background:var(--bad)}
+
+.search{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:110px 110px 170px 110px 100px 1fr auto;gap:12px;align-items:end}
+.search label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.code{text-transform:uppercase;font:700 1.35rem/1 "IBM Plex Sans Condensed",sans-serif;letter-spacing:.03em;padding:6px 10px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.9rem;padding-bottom:8px}
+.toggle input{width:auto}
+.go{border:0;border-radius:9px;background:var(--ink);color:var(--paper);font-weight:600;padding:11px 20px;cursor:pointer;white-space:nowrap}
+.go[disabled]{opacity:.5;cursor:not-allowed}
+.go.stop{background:var(--bad);color:#fff}
+
+.notice{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--amber-bg);font-size:.92rem}
+.notice ol{margin:6px 0 0;padding-left:20px}
+
+.verdict{margin-top:18px;display:grid;grid-template-columns:auto 1fr;gap:4px 18px;align-items:baseline;background:var(--best-bg);border-radius:14px;padding:16px 18px}
+.verdict .big{font:700 2.3rem/1 "IBM Plex Sans Condensed",sans-serif;color:var(--best);grid-row:span 2}
+.verdict .what{font-weight:600;font-size:1.05rem}
+.verdict .how{color:var(--ink);font-size:.92rem}
+
+.meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 8px;align-items:baseline}
+.grid-wrap{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:980px}
+th,td{border-bottom:1px solid var(--line);padding:10px;vertical-align:top;text-align:left}
+thead th{font:600 .85rem/1.2 "IBM Plex Sans",sans-serif;color:var(--muted);background:var(--soft);position:sticky;top:0}
+thead th .d{display:block;font:700 1.05rem/1.2 "IBM Plex Sans Condensed",sans-serif;color:var(--ink)}
+tbody th{width:150px;background:var(--paper);position:sticky;left:0;z-index:1;font-weight:600}
+tbody th .s{display:block;font-weight:400;font-size:.78rem;color:var(--muted)}
+tbody th.hdfc{color:var(--hdfc)} tbody th.axis{color:var(--axis)}
+td.cell{cursor:pointer;min-width:118px;font-variant-numeric:tabular-nums}
+td.cell:hover{background:var(--soft)}
+.eff{font:700 1.15rem/1.15 "IBM Plex Sans Condensed",sans-serif;display:block}
+.sub{display:block;font-size:.76rem;color:var(--muted);line-height:1.35}
+td.best{background:var(--best-bg)} td.best:hover{background:var(--best-bg)}
+td.best .eff{color:var(--best)}
+td.overall{box-shadow:inset 0 0 0 2px var(--best)}
+td.wait .sub,td.queued .sub{font-style:italic}
+td.wait{background:repeating-linear-gradient(-45deg,transparent 0 8px,var(--soft) 8px 16px)}
+td.err .sub{color:var(--bad)}
+tfoot td,tfoot th{border-bottom:0;background:var(--soft)}
+tfoot th{position:sticky;left:0;font-weight:600}
+tfoot .eff{color:var(--best)}
+
+.cols{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:22px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px}
+.rates{display:grid;grid-template-columns:1fr 90px;gap:8px 12px;align-items:center;font-size:.9rem}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{border-top:1px solid var(--line)}
+.hist li:first-child{border-top:0}
+.hist button{background:none;border:0;width:100%;text-align:left;padding:9px 2px;cursor:pointer}
+.hist button:hover{color:var(--best)}
+.legend{font-size:.84rem;color:var(--muted)}
+.legend p{margin:0 0 6px}
+
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);padding:0;width:min(640px,94vw);max-height:86vh}
+dialog::backdrop{background:rgba(10,15,30,.45)}
+.dlg{padding:18px 20px}
+.dlg header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.x{background:none;border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer}
+.fl{border-top:1px solid var(--line);padding:9px 0;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
+.fl .p{font-weight:700;text-align:right}
+.tag{display:inline-block;font-size:.74rem;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--amber-bg);margin:2px 4px 2px 0}
+.tag.yes{background:var(--best-bg);color:var(--best)}
+.open{display:inline-block;margin-top:12px;font-weight:600}
+
+@media (max-width:900px){
+  .search{grid-template-columns:1fr 1fr}
+  .search .wide{grid-column:1/-1}
+  .cols{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <h1>Fare Scout</h1>
+      <div class="muted">Live fares from seven booking sites, after offers and card rewards.</div>
+    </div>
+    <div class="ext" id="ext"><span class="dot"></span><span id="extText">Looking for the Fare Scout extension…</span></div>
+  </div>
+
+  <section class="search" aria-label="Search">
+    <div><label for="from">From</label><input id="from" class="code" maxlength="3" autocomplete="off" value="PAT"></div>
+    <div><label for="to">To</label><input id="to" class="code" maxlength="3" autocomplete="off" value="BLR"></div>
+    <div><label for="start">First date</label><input id="start" type="date"></div>
+    <div><label for="days">Days</label><select id="days"><option>3</option><option>5</option><option selected>7</option><option>10</option></select></div>
+    <div><label for="adults">Adults</label><select id="adults"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+    <label class="toggle wide"><input type="checkbox" id="nonstop"> Non-stop flights only</label>
+    <button class="go wide" id="go" type="button" disabled>Scan fares</button>
+  </section>
+
+  <div class="notice" id="install" hidden>
+    <strong>Scans need the Fare Scout extension in desktop Chrome.</strong>
+    <ol>
+      <li>Load the Fare Scout extension folder from chrome://extensions with Developer mode on ("Load unpacked").</li>
+      <li>Reload this page.</li>
+    </ol>
+    Saved scans still open without it. <button type="button" class="x" id="recheck">Check again</button>
+  </div>
+  <div class="notice" id="mobile" hidden>Scanning runs from desktop Chrome with the Fare Scout extension. On this device you can open any saved scan below.</div>
+
+  <section class="verdict" id="verdict" hidden aria-live="polite"></section>
+
+  <div class="meta">
+    <h2 id="gridTitle">No scan yet</h2>
+    <span class="muted small" id="gridMeta">Choose a route and dates, then scan.</span>
+  </div>
+  <div class="grid-wrap"><table id="grid"></table></div>
+
+  <div class="cols">
+    <section class="card legend">
+      <h2>How the price is worked out</h2>
+      <p><strong>Effective price</strong> = listed fare − discounts the site confirms for that flight − card rewards you'd earn. Prices are per adult.</p>
+      <p>Confirmed discounts include MakeMyTrip flat-₹ codes, EaseMyTrip's extra instant discount, Flipkart's "Savings of ₹X" and Amazon's "₹ off". "Up to" and percentage offers can't be priced until checkout, so they're listed in each cell's details instead.</p>
+      <p>Tap any cell for the next cheapest flights, every offer the site showed, and a link to the same search on that site.</p>
+    </section>
+    <section class="card">
+      <h2>Card rewards</h2>
+      <div class="rates">
+        <label for="rSb">SmartBuy, HDFC Infinia (%)</label><input id="rSb" type="number" step="0.1" min="0">
+        <label for="rAx">Travel EDGE, Axis Atlas (%)</label><input id="rAx" type="number" step="0.1" min="0">
+        <label for="rOt">Other sites, card you pay with (%)</label><input id="rOt" type="number" step="0.1" min="0">
+      </div>
+      <h2 style="margin-top:18px">Saved scans</h2>
+      <ul class="hist" id="hist"><li class="muted small">Loading…</li></ul>
+      <h2 style="margin-top:18px">Sync across devices</h2>
+      <div id="syncOff">
+        <p class="small muted" style="margin:0 0 8px">Scans sync through a private gist in your GitHub account. Create a token with only the <strong>gist</strong> permission, then paste it here once on each device. It stays in this browser.</p>
+        <a class="small" href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Fare%20Scout" target="_blank" rel="noopener">Create a gist-only token on GitHub</a>
+        <div style="display:flex;gap:8px;margin-top:8px"><input id="ghToken" type="password" placeholder="ghp_…" autocomplete="off" aria-label="GitHub token"><button class="go" id="syncBtn" type="button">Connect</button></div>
+      </div>
+      <div id="syncOn" hidden style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="x" id="syncNow" type="button">Refresh</button><button class="x" id="syncOut" type="button">Disconnect this device</button>
+      </div>
+      <p class="small muted" id="syncState" style="margin:8px 0 0"></p>
+    </section>
+  </div>
+</main>
+
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+
+<script>
+(function(){
+  const SOURCES = [
+    { id: "smartbuy", name: "SmartBuy", sub: "HDFC portal", cls: "hdfc", rate: "sb" },
+    { id: "axis", name: "Travel EDGE", sub: "Axis portal", cls: "axis", rate: "ax" },
+    { id: "mmt", name: "MakeMyTrip", sub: "", rate: "ot" },
+    { id: "yatra", name: "Yatra", sub: "", rate: "ot" },
+    { id: "emt", name: "EaseMyTrip", sub: "", rate: "ot" },
+    { id: "flipkart", name: "Flipkart", sub: "", rate: "ot" },
+    { id: "amazon", name: "Amazon", sub: "", rate: "ot" }
+  ];
+  const DEFAULTS = { sb: 16.5, ax: 5, ot: 3.3, nonstop: false, from: "PAT", to: "BLR", days: "7", adults: "1" };
+  const $ = id => document.getElementById(id);
+  const inr = n => n == null || !isFinite(n) ? "—" : "₹" + Math.round(n).toLocaleString("en-IN");
+  const fmtD = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+  const fmtTs = ts => new Date(ts).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const hm = m => m == null ? "" : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const isoPlus = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+
+  const S = { settings: Object.assign({}, DEFAULTS), params: null, dates: [], cells: {}, scanning: false, ext: null,
+    scannedAt: null, db: null, uid: null, history: [], viewingSaved: false };
+
+  // ---------------- settings (db when available, else this browser) ----------------
+  function readLocal() { try { return JSON.parse(localStorage.getItem("fs.settings") || "null"); } catch (e) { return null; } }
+  function writeLocal(s) { try { localStorage.setItem("fs.settings", JSON.stringify(s)); } catch (e) {} }
+  let saveT = null;
+  function saveSettings() {
+    writeLocal(S.settings);
+    clearTimeout(saveT);
+    saveT = setTimeout(() => { if (G.ready) gistWrite({ "settings.json": { content: JSON.stringify(S.settings) } }).catch(() => {}); }, 1500);
+  }
+  function applySettingsToForm() {
+    const s = S.settings;
+    $("rSb").value = s.sb; $("rAx").value = s.ax; $("rOt").value = s.ot; $("nonstop").checked = !!s.nonstop;
+    $("from").value = s.from; $("to").value = s.to; $("days").value = String(s.days); $("adults").value = String(s.adults);
+  }
+  const local = readLocal(); if (local) Object.assign(S.settings, local);
+  applySettingsToForm();
+  $("start").value = isoPlus(today(), 1);
+  $("start").min = today();
+
+  ["rSb", "rAx", "rOt"].forEach(id => $(id).addEventListener("input", () => {
+    S.settings.sb = +$("rSb").value || 0; S.settings.ax = +$("rAx").value || 0; S.settings.ot = +$("rOt").value || 0;
+    saveSettings(); render();
+  }));
+  $("nonstop").addEventListener("change", () => { S.settings.nonstop = $("nonstop").checked; saveSettings(); render(); });
+  ["from", "to"].forEach(id => $(id).addEventListener("input", e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ""); }));
+
+  // ---------------- extension bridge ----------------
+  const toExt = m => window.postMessage(Object.assign({ src: "fare-scout-page" }, m), window.location.origin);
+  window.addEventListener("message", ev => {
+    if (ev.source !== window || ev.origin !== window.location.origin) return;
+    const m = ev.data; if (!m || m.src !== "fare-scout-ext") return;
+    handleExt(m);
+  });
+  let pingT = null;
+  function lookForExtension() {
+    let pings = 0; clearInterval(pingT);
+    $("ext").className = "ext"; $("extText").textContent = "Looking for the Fare Scout extension…";
+    toExt({ type: "ping" });
+    pingT = setInterval(() => {
+      if (S.ext) { clearInterval(pingT); return; }
+      if (pings === 6) setExt(false);
+      if (pings++ > 60) { clearInterval(pingT); return; }
+      toExt({ type: "ping" });
+    }, 1000);
+  }
+  lookForExtension();
+  $("recheck").addEventListener("click", lookForExtension);
+
+  function setExt(v, version) {
+    S.ext = v ? (version || true) : null;
+    $("ext").className = "ext " + (v ? "on" : "off");
+    $("extText").textContent = v ? `Extension connected (v${version})` : "Extension not found";
+    const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+    $("install").hidden = !!v || mobile;
+    $("mobile").hidden = !!v || !mobile;
+    $("go").disabled = !v;
+  }
+
+  function handleExt(m) {
+    if (m.type === "hello") { if (!S.ext) setExt(true, m.version); return; }
+    if (m.type === "start") { S.dates = m.dates; for (const s of SOURCES) for (const d of m.dates) S.cells[key(s.id, d)] = { status: "queued" }; render(); return; }
+    if (m.type === "progress") { const k = key(m.source, m.date); if (!S.cells[k] || S.cells[k].status === "queued") S.cells[k] = { status: "wait" }; render(); return; }
+    if (m.type === "cell") { S.cells[key(m.source, m.date)] = m; render(); return; }
+    if (m.type === "done") { finishScan(); return; }
+    if (m.type === "fatal") { finishScan(m.error); return; }
+  }
+  const key = (s, d) => s + "|" + d;
+
+  // ---------------- scanning ----------------
+  $("go").addEventListener("click", () => {
+    if (S.scanning) { toExt({ type: "cancel" }); finishScan("Scan stopped"); return; }
+    const p = { from: $("from").value.trim().toUpperCase(), to: $("to").value.trim().toUpperCase(), start: $("start").value,
+      days: +$("days").value, adults: +$("adults").value };
+    if (!/^[A-Z]{3}$/.test(p.from) || !/^[A-Z]{3}$/.test(p.to)) { alert("Enter 3-letter airport codes, like PAT and BLR."); return; }
+    if (p.from === p.to) { alert("Origin and destination are the same."); return; }
+    if (!p.start || p.start < today()) { alert("Pick a first date from today onwards."); return; }
+    Object.assign(S.settings, { from: p.from, to: p.to, days: String(p.days), adults: String(p.adults) }); saveSettings();
+    S.params = p; S.cells = {}; S.dates = []; for (let i = 0; i < p.days; i++) S.dates.push(isoPlus(p.start, i));
+    for (const s of SOURCES) for (const d of S.dates) S.cells[key(s.id, d)] = { status: "queued" };
+    S.scanning = true; S.viewingSaved = false; S.scannedAt = null;
+    $("go").textContent = "Stop scan"; $("go").classList.add("stop");
+    render();
+    toExt({ type: "scan", params: p });
+  });
+
+  async function finishScan(err) {
+    if (!S.scanning) return;
+    S.scanning = false; S.scannedAt = new Date().toISOString();
+    $("go").textContent = "Scan fares"; $("go").classList.remove("stop");
+    for (const k in S.cells) if (S.cells[k].status === "queued" || S.cells[k].status === "wait") S.cells[k] = { status: "error", error: err || "Not checked" };
+    render();
+    await saveScan();
+  }
+
+  // ---------------- persistence: private GitHub Gist ----------------
+  const GIST_DESC = "Fare Scout data (private)";
+  const KEEP = 15;
+  const G = { token: lsGet("fs.ghToken"), gistId: lsGet("fs.gistId"), ready: false, busy: false };
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+
+  async function gh(path, opts) {
+    opts = opts || {};
+    const r = await fetch("https://api.github.com" + path, Object.assign({}, opts, { headers: Object.assign({
+      Authorization: "Bearer " + G.token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+      opts.body ? { "Content-Type": "application/json" } : {}) }));
+    if (r.status === 401) throw Object.assign(new Error("GitHub rejected the token"), { code: 401 });
+    if (!r.ok) throw Object.assign(new Error("GitHub returned " + r.status), { code: r.status });
+    return r.status === 204 ? null : r.json();
+  }
+  async function findOrCreateGist() {
+    if (G.gistId) { try { return await gh("/gists/" + G.gistId); } catch (e) { if (e.code === 401) throw e; G.gistId = null; } }
+    for (let page = 1; page <= 3; page++) {
+      const list = await gh(`/gists?per_page=100&page=${page}`);
+      const hit = list.find(g => g.description === GIST_DESC);
+      if (hit) { G.gistId = hit.id; lsSet("fs.gistId", hit.id); return await gh("/gists/" + hit.id); }
+      if (list.length < 100) break;
+    }
+    const g = await gh("/gists", { method: "POST", body: JSON.stringify({ description: GIST_DESC, public: false,
+      files: { "README.md": { content: "Saved scans and settings for Fare Scout. Edited automatically." } } }) });
+    G.gistId = g.id; lsSet("fs.gistId", g.id); return g;
+  }
+  async function fileText(f) {
+    if (!f.truncated && typeof f.content === "string") return f.content;
+    const r = await fetch(f.raw_url); return r.text();
+  }
+  async function gistLoad() {
+    const g = await findOrCreateGist();
+    const files = Object.values(g.files || {});
+    const hist = [];
+    for (const f of files) {
+      try {
+        if (f.filename === "settings.json") { const d = JSON.parse(await fileText(f)); Object.assign(S.settings, d); writeLocal(S.settings); applySettingsToForm(); }
+        else if (/^scan-\d+\.json$/.test(f.filename)) { const d = JSON.parse(await fileText(f)); if (d && d.params) hist.push(Object.assign({ id: f.filename }, d)); }
+      } catch (e) {}
+    }
+    S.history = hist.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+    return S.history;
+  }
+  async function gistWrite(files) { if (!G.gistId) await findOrCreateGist(); return gh("/gists/" + G.gistId, { method: "PATCH", body: JSON.stringify({ files }) }); }
+
+  function slimCells() {
+    const out = {};
+    for (const k in S.cells) {
+      const c = S.cells[k];
+      out[k] = { status: c.status, error: c.error || "", url: c.url || "", cheapest: c.cheapest || null, nonstop: c.nonstop || null,
+        top: (c.top || []).slice(0, 4), offers: (c.offers || []).slice(0, 8), count: c.count || 0, scannedAt: c.scannedAt || "" };
+    }
+    return out;
+  }
+  async function saveScan() {
+    if (!S.params) return;
+    const name = `scan-${Date.now()}.json`;
+    const rec = { savedAt: S.scannedAt, params: S.params, dates: S.dates, cells: slimCells() };
+    S.history.unshift(Object.assign({ id: name }, rec));
+    const drop = S.history.slice(KEEP); S.history = S.history.slice(0, KEEP);
+    renderHistory();
+    if (!G.ready) { saveLocalHistory(); return; }
+    try {
+      const files = { [name]: { content: JSON.stringify(rec) } };
+      for (const d of drop) if (/^scan-\d+\.json$/.test(d.id)) files[d.id] = null;
+      await gistWrite(files);
+      setSync("Synced just now");
+    } catch (e) { setSync("Couldn't sync this scan: " + e.message, true); saveLocalHistory(); }
+  }
+  // Without sync, keep the last few scans in this browser.
+  function saveLocalHistory() { try { localStorage.setItem("fs.history", JSON.stringify(S.history.slice(0, 5))); } catch (e) {} }
+  function loadLocalHistory() { try { return JSON.parse(localStorage.getItem("fs.history") || "[]"); } catch (e) { return []; } }
+
+  function renderHistory() {
+    const ul = $("hist");
+    if (!S.history.length) { ul.innerHTML = `<li class="muted small">${G.ready ? "No saved scans yet. Scans you run are synced here." : "Connect GitHub below to sync scans across devices."}</li>`; return; }
+    ul.innerHTML = S.history.map(h => `<li><button type="button" data-id="${esc(h.id)}"><strong>${esc(h.params.from)} → ${esc(h.params.to)}</strong>, ${fmtD(h.params.start)} + ${h.params.days - 1} days<span class="sub">Scanned ${fmtTs(h.savedAt)}</span></button></li>`).join("");
+    ul.querySelectorAll("button").forEach(b => b.addEventListener("click", () => loadSaved(b.dataset.id)));
+  }
+  function loadSaved(id) {
+    if (S.scanning) return;
+    const h = S.history.find(x => x.id === id); if (!h) return;
+    S.params = h.params; S.dates = h.dates; S.cells = h.cells; S.scannedAt = h.savedAt; S.viewingSaved = true;
+    $("from").value = h.params.from; $("to").value = h.params.to; $("start").value = h.params.start >= today() ? h.params.start : $("start").value;
+    render(); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function setSync(msg, bad) { $("syncState").textContent = msg; $("syncState").style.color = bad ? "var(--bad)" : ""; }
+  function renderSyncUi() {
+    $("syncOff").hidden = G.ready; $("syncOn").hidden = !G.ready;
+  }
+  async function connect() {
+    if (G.busy) return; G.busy = true;
+    setSync("Connecting to GitHub…");
+    try {
+      await gistLoad(); G.ready = true; renderSyncUi(); setSync(`Synced ${S.history.length} saved scan${S.history.length === 1 ? "" : "s"}`);
+      renderHistory(); render();
+      if (!S.params && S.history.length && !S.scanning) loadSaved(S.history[0].id);
+    } catch (e) {
+      G.ready = false; renderSyncUi();
+      if (e.code === 401) { G.token = null; lsSet("fs.ghToken", null); setSync("GitHub rejected the token. Paste a new one.", true); }
+      else setSync("Couldn't reach GitHub: " + e.message, true);
+    } finally { G.busy = false; }
+  }
+  $("syncBtn").addEventListener("click", () => {
+    const t = $("ghToken").value.trim(); if (!t) { setSync("Paste a token first.", true); return; }
+    G.token = t; lsSet("fs.ghToken", t); $("ghToken").value = ""; connect();
+  });
+  $("syncOut").addEventListener("click", () => {
+    G.token = null; G.ready = false; lsSet("fs.ghToken", null); renderSyncUi(); setSync("Disconnected on this device. Your gist is untouched.");
+  });
+  $("syncNow").addEventListener("click", connect);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && G.ready && !S.scanning) connect(); });
+
+  renderSyncUi();
+  if (G.token) connect();
+  else { S.history = loadLocalHistory(); renderHistory(); if (S.history.length) loadSaved(S.history[0].id); }
+
+  // ---------------- pricing ----------------
+  function rateFor(src) { const s = SOURCES.find(x => x.id === src); return (S.settings[s.rate] || 0) / 100; }
+  function chosen(c) { if (!c || c.status !== "ok") return null; return S.settings.nonstop ? c.nonstop : c.cheapest; }
+  function price(src, f) {
+    if (!f) return null;
+    const net = f.price - (f.saving || 0); const back = net * rateFor(src);
+    return { listed: f.price, saving: f.saving || 0, code: f.savingCode || "", net, back, eff: net - back };
+  }
+
+  // ---------------- render ----------------
+  function render() {
+    const t = $("grid");
+    if (!S.dates.length) { t.innerHTML = `<tbody><tr><td class="muted" style="padding:28px">Results appear here, one row per site and one column per date.</td></tr></tbody>`; $("verdict").hidden = true; return; }
+    const p = S.params;
+    $("gridTitle").textContent = `${p.from} → ${p.to}${S.settings.nonstop ? ", non-stop" : ""}`;
+    const done = Object.values(S.cells).filter(c => !["queued", "wait"].includes(c.status)).length, total = SOURCES.length * S.dates.length;
+    $("gridMeta").textContent = S.scanning ? `Scanning… ${done} of ${total} checked` :
+      S.scannedAt ? `${S.viewingSaved ? "Saved scan from" : "Scanned"} ${fmtTs(S.scannedAt)}${(Date.now() - new Date(S.scannedAt)) > 6 * 3600e3 ? ". Prices may have moved since; rescan before booking." : ""}` : "";
+
+    const bestPerDay = {}; let overall = null;
+    for (const d of S.dates) for (const s of SOURCES) {
+      const pr = price(s.id, chosen(S.cells[key(s.id, d)]));
+      if (!pr) continue;
+      if (!bestPerDay[d] || pr.eff < bestPerDay[d].eff) bestPerDay[d] = Object.assign({ src: s.id }, pr);
+      if (!overall || pr.eff < overall.eff) overall = Object.assign({ src: s.id, date: d }, pr);
+    }
+
+    let h = `<thead><tr><th>Site</th>${S.dates.map(d => { const [w, ...r] = fmtD(d).split(" "); return `<th><span class="d">${esc(r.join(" "))}</span>${esc(w.replace(",", ""))}</th>`; }).join("")}</tr></thead><tbody>`;
+    for (const s of SOURCES) {
+      h += `<tr><th class="${s.cls || ""}">${esc(s.name)}<span class="s">${s.id === "smartbuy" || s.id === "axis" ? esc(s.sub) + ", " : ""}${(S.settings[s.rate] || 0)}% back</span></th>`;
+      for (const d of S.dates) {
+        const c = S.cells[key(s.id, d)] || { status: "queued" };
+        const f = chosen(c), pr = price(s.id, f);
+        let cls = "cell", inner = "";
+        if (c.status === "queued") { cls += " queued"; inner = `<span class="sub">Waiting</span>`; }
+        else if (c.status === "wait") { cls += " wait"; inner = `<span class="sub">Checking…</span>`; }
+        else if (c.status === "login") { cls += " err"; inner = `<span class="sub">Sign in to this site in Chrome, then rescan</span>`; }
+        else if (c.status === "error" || c.status === "blocked") { cls += " err"; inner = `<span class="sub">${esc(c.error || "Couldn't read results")}</span>`; }
+        else if (c.status === "empty" || !pr) { inner = `<span class="sub">${S.settings.nonstop && c.status === "ok" ? "No non-stop" : "No flights"}</span>`; }
+        else {
+          if (bestPerDay[d] && bestPerDay[d].src === s.id) cls += " best";
+          if (overall && overall.src === s.id && overall.date === d) cls += " overall";
+          inner = `<span class="eff">${inr(pr.eff)}</span><span class="sub">${inr(pr.listed)} listed${pr.saving ? ", −" + inr(pr.saving) + " " + esc(pr.code) : ""}</span><span class="sub">${esc(f.flight || f.airline || "")}${f.dep ? " · " + esc(f.dep) : ""}${f.stops === 0 ? " · non-stop" : f.stops ? " · " + f.stops + " stop" : ""}</span>`;
+        }
+        h += `<td class="${cls}" tabindex="0" data-k="${esc(key(s.id, d))}">${inner}</td>`;
+      }
+      h += `</tr>`;
+    }
+    h += `</tbody><tfoot><tr><th>Best price</th>${S.dates.map(d => { const b = bestPerDay[d]; return `<td>${b ? `<span class="eff">${inr(b.eff)}</span><span class="sub">${esc(SOURCES.find(x => x.id === b.src).name)}</span>` : `<span class="sub">—</span>`}</td>`; }).join("")}</tr></tfoot>`;
+    t.innerHTML = h;
+    t.querySelectorAll("td.cell").forEach(td => {
+      td.addEventListener("click", () => openCell(td.dataset.k));
+      td.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCell(td.dataset.k); } });
+    });
+
+    const v = $("verdict");
+    if (overall && !S.scanning) {
+      const s = SOURCES.find(x => x.id === overall.src), c = S.cells[key(overall.src, overall.date)], f = chosen(c);
+      const parts = [`${inr(overall.listed)} listed`];
+      if (overall.saving) parts.push(`−${inr(overall.saving)} with ${overall.code || "the site's offer"}`);
+      if (overall.back) parts.push(`−${inr(overall.back)} in card rewards`);
+      v.innerHTML = `<div class="big">${inr(overall.eff)}</div><div class="what">Book ${esc(fmtD(overall.date))} on ${esc(s.name)}: ${esc(f.flight || f.airline || "")}${f.dep ? ", " + esc(f.dep) + " → " + esc(f.arr) + (f.nextDay ? " (+1)" : "") : ""}${f.stops === 0 ? ", non-stop" : f.stops ? ", " + f.stops + " stop" : ""}</div><div class="how">${parts.join(", ")}. <a href="${esc(c.url)}" target="_blank" rel="noopener">Open this search on ${esc(s.name)}</a></div>`;
+      v.hidden = false;
+    } else v.hidden = true;
+  }
+
+  function cardMatch(text) {
+    const t = String(text || "");
+    if (/HDFC/i.test(t) && !/EMI/i.test(t)) return "Your HDFC card";
+    if (/Axis Bank Credit/i.test(t) && !/Flipkart Axis/i.test(t)) return "Your Axis card";
+    return "";
+  }
+
+  function openCell(k) {
+    const c = S.cells[k]; if (!c) return;
+    const [srcId, d] = k.split("|"); const s = SOURCES.find(x => x.id === srcId);
+    let h = `<header><div><h2>${esc(s.name)}, ${esc(fmtD(d))}</h2><div class="muted small">${c.scannedAt ? "Checked " + fmtTs(c.scannedAt) : ""}${c.count ? ` · ${c.count} flights found` : ""}</div></div><button class="x" type="button" id="dlgX">Close</button></header>`;
+    if (c.status !== "ok") h += `<p>${esc(c.status === "login" ? "Sign in to this site in Chrome, then rescan." : c.error || "No flights found.")}</p>`;
+    else {
+      const rows = (S.settings.nonstop ? (c.top || []).filter(f => f.stops === 0).concat(c.nonstop && !(c.top || []).some(f => f.stops === 0) ? [c.nonstop] : []) : (c.top || []));
+      h += rows.map(f => { const pr = price(srcId, f); return `<div class="fl"><div><strong>${esc(f.flight || f.airline)}</strong>${f.flight && f.airline ? ` <span class="muted">${esc(f.airline)}</span>` : ""}<span class="sub">${f.dep ? esc(f.dep) + " → " + esc(f.arr) + (f.nextDay ? " (+1)" : "") + ", " : ""}${f.stops === 0 ? "non-stop" : f.stops != null ? f.stops + " stop" + (f.via ? " via " + esc(f.via) : "") : ""}${f.durMin ? ", " + hm(f.durMin) : ""}${f.note ? ". " + esc(f.note) : ""}</span></div><div class="p">${inr(pr.eff)}<span class="sub">${inr(pr.listed)}${pr.saving ? " − " + inr(pr.saving) : ""}</span></div></div>`; }).join("") || `<p class="muted">No matching flights.</p>`;
+      const offers = c.offers || [];
+      if (offers.length) {
+        h += `<h2 style="margin-top:14px">Other offers the site showed</h2><p class="muted small" style="margin:0 0 6px">Not counted above. Their value depends on the card and fare, and shows at checkout.</p>`;
+        h += offers.map(o => { const m = cardMatch(o.text); return `<div><span class="tag${m ? " yes" : ""}">${m ? esc(m) : o.kind === "note" ? "Note" : o.kind === "flat" ? "Flat" : o.kind === "percent" ? "%" : "Up to"}</span>${esc(o.text)}</div>`; }).join("");
+      }
+    }
+    if (c.url) h += `<a class="open" href="${esc(c.url)}" target="_blank" rel="noopener">Open this search on ${esc(s.name)}</a>`;
+    $("dlgBody").innerHTML = h;
+    $("dlg").showModal();
+    $("dlgX").addEventListener("click", () => $("dlg").close());
+  }
+  $("dlg").addEventListener("click", e => { if (e.target === $("dlg")) $("dlg").close(); });
+
+  render();
+})();
+</script>
+</body>
+</html>
